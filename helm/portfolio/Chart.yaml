@@ -1,0 +1,13 @@
+apiVersion: v2
+name: portfolio
+description: Helm chart for Anant Kumar's portfolio — Next.js frontend + optional contact API
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Anant Kumar
+    url: https://github.com/tyagianant5292
+keywords:
+  - portfolio
+  - nextjs
+  - devops

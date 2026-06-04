@@ -1,0 +1,82 @@
+# Default values for the portfolio chart.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ---------------------------------------------------------------------------
+# Frontend (Next.js)
+# ---------------------------------------------------------------------------
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: tyagianant98/portfolio-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 3000
+  # NEXT_PUBLIC_API_URL is baked at build time, but kept here for clarity /
+  # runtime-readable references.
+  env:
+    NEXT_PUBLIC_API_URL: "https://anant-portfolio-api.onrender.com"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+    port: 80
+
+# ---------------------------------------------------------------------------
+# Backend (Express contact API) — optional. Disabled by default because the
+# API is primarily deployed on Render. Enable to run it in-cluster too.
+# ---------------------------------------------------------------------------
+backend:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: tyagianant98/portfolio-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 4000
+  env:
+    ALLOWED_ORIGINS: "https://anant-portfolio.vercel.app"
+    SMTP_HOST: "smtp.gmail.com"
+    SMTP_PORT: "587"
+    SMTP_USER: "tyagianant98@gmail.com"
+    MAIL_TO: "tyagianant98@gmail.com"
+    MAIL_FROM: "tyagianant98@gmail.com"
+  # SMTP_PASS should come from a Secret, not values. Create it with:
+  #   kubectl create secret generic portfolio-smtp --from-literal=SMTP_PASS=xxxx
+  # then set existingSecret below.
+  existingSecret: ""
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi
+  service:
+    type: ClusterIP
+    port: 80
+
+# ---------------------------------------------------------------------------
+# Ingress — routes the frontend (and /api -> backend when enabled).
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  host: portfolio.local
+  tls:
+    enabled: false
+    secretName: portfolio-tls
+
+# Pod-level security context (non-root, matching the Dockerfiles).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001

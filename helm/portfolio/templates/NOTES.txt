@@ -1,0 +1,17 @@
+✅ {{ include "portfolio.fullname" . }} deployed (release: {{ .Release.Name }})
+
+Components:
+  frontend: {{ if .Values.frontend.enabled }}enabled ({{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}){{ else }}disabled{{ end }}
+  backend:  {{ if .Values.backend.enabled }}enabled ({{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}){{ else }}disabled{{ end }}
+
+{{- if .Values.ingress.enabled }}
+
+🌐 Ingress is enabled. Add this to /etc/hosts (for local clusters):
+   127.0.0.1  {{ .Values.ingress.host }}
+Then open: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
+{{- else }}
+
+🔌 Ingress is disabled. Port-forward the frontend to view it locally:
+   kubectl port-forward svc/{{ include "portfolio.fullname" . }}-frontend 8080:{{ .Values.frontend.service.port }}
+Then open: http://localhost:8080
+{{- end }}
