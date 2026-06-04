@@ -9,15 +9,22 @@ Kubernetes via a Helm chart — because that itself is the DevOps showcase.
 
 ### Features
 
-- **Interactive terminal UI** — the home page is a working shell. Try
-  `help`, `whoami`, `skills` (or the easter egg `kubectl get pods`),
-  `experience` → `exp 1`, `neofetch`, with command history (↑/↓) and Tab
-  autocomplete.
-- **AI "ask my resume"** — `ask <question>` answers questions about Anant via
-  Groq (`llama-3.3-70b-versatile`), grounded strictly on the resume so it
-  won't hallucinate. Backed by `POST /api/ask`.
-- **Classic view** — a traditional scroll-based portfolio lives at `/classic`
-  (command: `classic`).
+- **Interactive terminal UI** — the home page is a working shell with command
+  history (↑/↓) and Tab autocomplete. Try `help`, `whoami`, `skills`
+  (easter egg: `kubectl get pods`), `experience` → `exp 1`, `neofetch`.
+- **Case-study deep-dives** — `projects` → `project 1` render Problem →
+  Architecture (ASCII diagram) → Impact for real work (Core42 AI Cloud,
+  vLLM on K8s, GPU/InfiniBand health gate).
+- **AI "ask my resume" (streaming)** — `ask <question>` streams answers
+  token-by-token via Groq (`llama-3.3-70b-versatile`), grounded on the resume
+  (no hallucination), with multi-turn context and suggested follow-ups.
+  Backed by `POST /api/ask`.
+- **Live infra showcase** — `status` shows real backend uptime/commit/traffic
+  (`GET /api/status`); `kubectl get all` and `helm list` show this site's own
+  deployment; `nvidia-smi` is an on-brand easter egg.
+- **Print-ready resume** — `/resume` (command: `resume`) → Save as PDF.
+- **Classic view** — traditional scroll-based portfolio at `/classic`.
+- **Polish** — dynamic OG share image, Vercel Analytics, SEO metadata.
 - **Contact API** — `POST /api/contact` with SMTP email + rate limiting.
 
 ```
