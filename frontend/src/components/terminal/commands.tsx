@@ -230,17 +230,24 @@ function experienceDetailNode(idx: number): ReactNode {
 }
 
 function projectsListNode(): ReactNode {
+  const row = (p: (typeof projects)[number], i: number) => (
+    <div key={p.slug} className="flex flex-wrap gap-x-3">
+      <span className={C.yellow}>project {i + 1}</span>
+      <span className={C.white}>{p.title}</span>
+      <span className={C.muted}>— {p.org}</span>
+    </div>
+  );
   return (
-    <div>
-      <p className={C.muted}>case-study deep-dives:</p>
-      {projects.map((p, i) => (
-        <div key={p.slug} className="flex flex-wrap gap-x-3">
-          <span className={C.yellow}>project {i + 1}</span>
-          <span className={C.white}>{p.title}</span>
-          <span className={C.muted}>— {p.org}</span>
-        </div>
-      ))}
-      <p className={`${C.muted} mt-2`}>
+    <div className="space-y-2">
+      <div>
+        <p className={`${C.accent} font-semibold`}># Company projects</p>
+        {projects.map((p, i) => (p.category === "company" ? row(p, i) : null))}
+      </div>
+      <div>
+        <p className={`${C.accent} font-semibold`}># Personal projects</p>
+        {projects.map((p, i) => (p.category === "personal" ? row(p, i) : null))}
+      </div>
+      <p className={C.muted}>
         Type <span className={C.yellow}>project 1</span> … to open a write-up.
       </p>
     </div>

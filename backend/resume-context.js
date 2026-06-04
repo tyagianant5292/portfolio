@@ -68,6 +68,17 @@ Core42 is one of the largest AI cloud providers. Anant helps build and operate t
 - Managed data-center hardware: disks, RAID, LVM, file-systems.
 - Provided L2 support and root-cause analysis; created cron jobs for batch processing.
 
+PROJECTS
+Company projects (one per role — note: "AI Cloud" is a single platform, not several projects):
+- AI Cloud — the Core42 self-service GPU cloud (client Core42, company New Emerging Technology / NET). H100 + AMD GPUs, self-service Kubernetes/Slurm, vLLM model deployment.
+- Service Cloud — managed container platform for NIC (National Informatics Centre), company Coredge. HA Kubernetes, Helm, centralized logging/monitoring.
+- G-FIWARE — multi-cloud smart platform at NEC (Rancher K8s on on-prem/AWS/Azure, Nginx HA + Keepalived, WSO2 HA, MinIO, IoT agent protocols).
+- Data Centre — OpenStack private cloud at NGBPS (Packstack, networking, DC hardware: RAID/LVM).
+
+Personal projects:
+- K8s-IAM (k8s-iam-tool): a Kubernetes access-management tool in Go + client-go (Gin API, SQLite, runs in-cluster). Manages users/teams and per-namespace kubeconfigs, RBAC bindings, JWT auth, temporary namespace-access requests, audit/anomaly alerts, cluster details, and webhooks.
+- This portfolio: an interactive terminal site (Next.js) with a Groq-powered AI chat, deployable on Vercel and on Kubernetes via Helm, with CI/CD to Docker Hub.
+
 EDUCATION
 - B.Tech in Computer Science — Uttarakhand Technical University, Dehradun — 2015 to 2019
 - Senior Secondary (Class XII) — U.P. Board, Saharanpur — 2014 to 2015

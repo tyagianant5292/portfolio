@@ -1,7 +1,9 @@
 // Case-study deep-dives surfaced via the terminal `projects` command.
+// Two groups: real company projects (one per role) and personal projects.
 
 export type Project = {
   slug: string;
+  category: "company" | "personal";
   title: string;
   org: string;
   period: string;
@@ -14,27 +16,31 @@ export type Project = {
 };
 
 export const projects: Project[] = [
+  // ───────────────────────── company projects ─────────────────────────
   {
-    slug: "core42-ai-cloud",
-    title: "Self-Service GPU Cloud Platform",
-    org: "Core42 — one of the largest AI clouds",
-    period: "2025 – present",
+    slug: "ai-cloud",
+    category: "company",
+    title: "AI Cloud — Self-Service GPU Cloud",
+    org: "Client: Core42 · New Emerging Technology (NET)",
+    period: "Jul 2025 – present",
     stack: [
       "Kubernetes",
       "Slurm",
       "NVIDIA H100",
       "AMD GPU",
       "InfiniBand",
+      "vLLM",
       "Apache APISIX",
       "Ansible",
       "ArgoCD",
+      "Cisco NDFC",
     ],
     problem:
-      "Customers need on-demand GPU compute that they can self-provision — buy GPUs, spin up Kubernetes or Slurm, and deploy their own models — without filing tickets or waiting on ops. That means turning a bare-metal H100/AMD fleet into a reliable, multi-tenant, self-service cloud.",
+      "Core42 (one of the largest AI clouds) needed a self-service GPU cloud where customers buy compute and provision it themselves — spin up Kubernetes or Slurm and deploy their own models — on a bare-metal H100/AMD fleet that has to be rock-solid and multi-tenant.",
     architecture: String.raw`
   customer ─▶  console.aicloud.core42.ai      (self-service portal)
-                        │
-                        ▼   buy GPU · deploy K8s/Slurm · ship models
+                        │  buy GPU · deploy K8s/Slurm · ship models
+                        ▼
               ┌─────────────────────┐
               │  Apache APISIX       │   routing · auth · LB · observability
               └──────────┬──────────┘
@@ -47,80 +53,169 @@ export const projects: Project[] = [
           └──────────────┼──────────────┘
                          ▼
               ┌─────────────────────┐
-              │ Bare-metal GPU fleet │
-              │ H100 · AMD · InfiniBand
+              │ Bare-metal GPU fleet │  H100 · AMD
+              │ InfiniBand · Cisco NDFC
               └─────────────────────┘`,
     contributions: [
       "Bare-metal provisioning of GPU nodes via MAAS / PXE; lead debugging of boot & node-commissioning faults.",
-      "GPU + InfiniBand commissioning health gate so only verified hardware enters the pool.",
-      "Multi-tenant Kubernetes + Slurm scheduling with isolation between customers.",
-      "Apache APISIX for routing, auth, load balancing and observability at the edge.",
-      "GitOps with ArgoCD + GitHub Actions; provisioning automated with Ansible.",
+      "Custom InfiniBand + GPU health gate at commissioning so only verified hardware joins the pool.",
+      "Deployed and managed vLLM inference on Kubernetes with GPU scheduling for real-time + batch.",
+      "Multi-tenant Kubernetes + Slurm scheduling with isolation; Apache APISIX at the edge.",
+      "High-speed interconnects via Cisco NDFC; GitOps with ArgoCD + GitHub Actions; automation with Ansible.",
     ],
     impact: [
-      "Customers self-serve GPU compute (H100 / AMD) — buy, deploy K8s/Slurm, and run models with no manual ops.",
-      "Reliable onboarding of new GPU bare-metals into production.",
+      "Customers self-serve GPU compute (H100 / AMD) — buy, deploy K8s/Slurm, run models with no manual ops.",
+      "Reliable onboarding of GPU bare-metals; bad hardware caught before production.",
     ],
     link: "https://console.aicloud.core42.ai",
   },
   {
-    slug: "vllm-on-k8s",
-    title: "vLLM Inference on Kubernetes with GPU Scheduling",
-    org: "Core42",
-    period: "2025 – present",
-    stack: ["vLLM", "Kubernetes", "Helm", "GPU scheduling", "Prometheus", "Grafana"],
+    slug: "service-cloud",
+    category: "company",
+    title: "Service Cloud — Managed Container Platform",
+    org: "Client: NIC (National Informatics Centre) · Coredge",
+    period: "Jun 2024 – Jul 2025",
+    stack: ["Kubernetes", "Helm", "Docker", "Prometheus", "Grafana", "CI/CD"],
     problem:
-      "Serving large language models efficiently means packing expensive GPUs well — handling both low-latency real-time requests and high-throughput batch inference — without idle silicon or noisy-neighbor contention.",
+      "NIC needed highly available, scalable services running on a managed container platform, with fast deployments and early detection of production issues across many teams.",
     architecture: String.raw`
-   requests ─▶ APISIX ─▶ ┌───────────────────────────┐
-                          │  Kubernetes (GPU nodes)   │
-                          │  ┌─────────┐  ┌─────────┐ │
-                          │  │ vLLM pod│  │ vLLM pod│ │  ◀ GPU-scheduled
-                          │  │  H100   │  │  H100   │ │
-                          │  └─────────┘  └─────────┘ │
-                          │     ▲ autoscale  ▲        │
-                          └─────┼────────────┼────────┘
-                                │            │
-                          Prometheus ─▶ Grafana  (utilization, latency)`,
+   users ─▶ load balancer ─▶ ┌──────────────────────────┐
+                              │  HA Kubernetes clusters   │
+                              │  Helm-deployed services   │
+                              └────────────┬─────────────┘
+                                           ▼
+                          centralized logging + monitoring
+                              (Prometheus · Grafana)`,
     contributions: [
-      "Deployed and managed vLLM inference services on Kubernetes with GPU resource requests/limits.",
-      "Tuned GPU scheduling to balance real-time and batch inference workloads.",
-      "Packaged deployments with Helm; wired Prometheus + Grafana for utilization and latency.",
+      "Configured highly available, scalable Kubernetes clusters for critical production workloads.",
+      "Deployed applications via Helm charts and manifests; standardized container-based infrastructure.",
+      "Automated end-to-end deployment of a major application, cutting deployment time and manual effort.",
+      "Built centralized logging + monitoring for early issue detection; provided L3/L4 RCA support.",
     ],
     impact: [
-      "Optimized GPU utilization across real-time and batch inference.",
-      "Repeatable, version-controlled model rollouts.",
+      "Improved resource efficiency and reduced operational overhead.",
+      "Faster, repeatable deployments with earlier incident detection.",
     ],
   },
   {
-    slug: "gpu-health-validation",
-    title: "InfiniBand + GPU Health Validation at Commissioning",
-    org: "Core42",
-    period: "2025 – present",
-    stack: ["Bash", "InfiniBand", "NVIDIA GPU", "Ansible", "PXE / MAAS"],
+    slug: "g-fiware",
+    category: "company",
+    title: "G-FIWARE — Multi-Cloud Smart-Platform",
+    org: "NEC Corporation India",
+    period: "Jan 2022 – Mar 2024",
+    stack: ["Rancher", "Kubernetes", "Nginx", "Keepalived", "WSO2", "MinIO", "AWS", "Azure"],
     problem:
-      "A single bad InfiniBand port or unhealthy GPU slipping into the cluster shows up later as failed training runs and hard-to-trace incidents. Hardware needed to be proven healthy before it ever joined the production pool.",
+      "The G-FIWARE platform had to run across on-premises, AWS and Azure with high availability for its API and identity layers, plus support for a range of IoT device protocols.",
     architecture: String.raw`
-   new node ─▶ PXE / MAAS commission
-                    │
-                    ▼
-          ┌───────────────────────────┐
-          │  health validation script  │
-          │  • InfiniBand port status   │
-          │  • GPU presence & health    │
-          │  • link/bandwidth checks    │
-          └─────────────┬─────────────┘
-              pass ◀─────┴─────▶ fail
-               │                  │
-               ▼                  ▼
-        join prod pool      quarantine + alert`,
+   ┌── on-prem ──┐  ┌──── AWS ────┐  ┌──── Azure ───┐
+   │  Rancher K8s│  │ Rancher K8s │  │ Rancher K8s  │
+   └──────┬──────┘  └──────┬──────┘  └──────┬───────┘
+          └────────────────┼────────────────┘
+                           ▼
+              Nginx HA + Keepalived (DNS routing)
+              WSO2 API-M / Identity (HA) · MinIO
+                           ▼
+          IoT Agents: UL · LWM2M · OPC UA · LoRaWAN`,
     contributions: [
-      "Built a custom script that validates InfiniBand ports and GPU node health at commissioning time.",
-      "Integrated it into the provisioning flow as a gate before nodes join production.",
+      "Created Kubernetes clusters with Rancher across on-prem, AWS and Azure for prod + dev.",
+      "Deployed all G-FIWARE components via manifests; implemented a local storage feature.",
+      "Built Nginx HA with Keepalived for DNS routing; enabled HA for WSO2 API-M and Identity Server.",
+      "Configured Nginx with multiple HTTPS ports + SSL; integrated MinIO object storage.",
+      "Implemented IoT Agent protocols: UL, LWM2M, OPC UA, LoRaWAN.",
     ],
     impact: [
-      "Bad hardware is caught at commission time, not in production.",
-      "Smoother, more trustworthy GPU node onboarding.",
+      "A resilient multi-cloud platform with HA API/identity layers.",
+      "Broad IoT device support through multiple agent protocols.",
     ],
+  },
+  {
+    slug: "data-centre",
+    category: "company",
+    title: "Data Centre — OpenStack Private Cloud",
+    org: "NGBPS Limited",
+    period: "Mar 2021 – Jan 2022",
+    stack: ["OpenStack", "Packstack", "Linux", "RAID / LVM", "Networking"],
+    problem:
+      "A private cloud had to be stood up and operated on physical servers in the data centre — from hardware and storage up to running OpenStack and supporting workloads.",
+    architecture: String.raw`
+   ┌──────────────── Data Centre ────────────────┐
+   │  physical servers · disks · RAID · LVM       │
+   │            ▼                                  │
+   │   OpenStack (deployed via Packstack)          │
+   │   compute · networking · images (Win/Linux)   │
+   └──────────────────────────────────────────────┘`,
+    contributions: [
+      "Administered OpenStack-based private clouds; deployed OpenStack via Packstack on physical servers.",
+      "Configured networking and created Windows / Linux images for the environment.",
+      "Managed data-centre hardware: disk installation, RAID, LVM, file-systems; scaled CPU/memory.",
+      "Provided L2 support and RCA; created cron jobs for batch processing and scheduled reports.",
+    ],
+    impact: [
+      "A working private cloud delivered and operated end-to-end.",
+      "Reliable capacity scaling to meet changing workload demands.",
+    ],
+  },
+
+  // ───────────────────────── personal projects ─────────────────────────
+  {
+    slug: "k8s-iam",
+    category: "personal",
+    title: "K8s-IAM — Kubernetes Access Management",
+    org: "Personal project",
+    period: "2025",
+    stack: ["Go", "client-go", "Gin", "Kubernetes RBAC", "JWT", "SQLite", "Docker"],
+    problem:
+      "Managing who can do what across Kubernetes namespaces is painful — handing out kubeconfigs, scoping RBAC, granting temporary access, and spotting suspicious activity. I built a tool to manage users and teams' kubeconfigs and permissions from one place.",
+    architecture: String.raw`
+   admin/user ─▶ ┌──────────────────────────────┐
+                  │   k8s-iam (Go · Gin API)      │  in-cluster pod
+                  │  • users/teams + JWT auth     │
+                  │  • per-namespace kubeconfigs  │
+                  │  • RBAC bindings              │
+                  │  • temp-access requests       │
+                  │  • audit / anomaly alerts     │
+                  │  • webhooks · SQLite store    │
+                  └───────────────┬──────────────┘
+                                  ▼  ServiceAccount (ClusterRole)
+                       Kubernetes API server
+                  (ServiceAccounts · Role/ClusterRoleBindings)`,
+    contributions: [
+      "Built a Go + client-go service (Gin API) to manage users/teams and generate per-namespace kubeconfigs.",
+      "Permissions scoped per namespace via Role/ClusterRole bindings; JWT-based auth.",
+      "Temporary namespace-access requests, plus anomaly alerts from Kubernetes audit logs.",
+      "Cluster details, webhooks, and an embedded SQLite store — runs entirely in-cluster.",
+    ],
+    impact: [
+      "Self-service, auditable Kubernetes access without hand-editing RBAC.",
+      "Time-bound access + anomaly alerts reduce standing-permission risk.",
+    ],
+  },
+  {
+    slug: "portfolio",
+    category: "personal",
+    title: "This Portfolio — Terminal UI + AI",
+    org: "Personal project",
+    period: "2025",
+    stack: ["Next.js", "TypeScript", "Express", "Groq", "Docker", "Helm", "GitHub Actions"],
+    problem:
+      "A DevOps portfolio should prove the skills, not just list them. So this site is both an interactive terminal and a piece of real infrastructure — deployable to Vercel and to Kubernetes via Helm.",
+    architecture: String.raw`
+   visitor ─▶ Next.js terminal UI (Vercel edge)
+                       │  ask / status / projects
+                       ▼
+              Express API (Render)
+              • /api/ask  ─▶ Groq (streaming LLM)
+              • /api/status · /api/contact
+                       ▲
+   GitHub ─▶ Actions ─▶ Docker Hub ─▶ Helm chart ─▶ Kubernetes`,
+    contributions: [
+      "Interactive terminal front-end (command engine, history, streaming AI chat).",
+      "Express backend with a Groq-powered, resume-grounded 'ask' endpoint.",
+      "Dockerized both tiers; Helm chart for Kubernetes; CI/CD to Docker Hub via GitHub Actions.",
+    ],
+    impact: [
+      "The portfolio itself demonstrates Kubernetes, Helm, Docker, CI/CD and AI integration.",
+    ],
+    link: "https://github.com/tyagianant5292/portfolio",
   },
 ];
