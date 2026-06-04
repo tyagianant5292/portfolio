@@ -47,8 +47,10 @@ app.get("/", (_req, res) =>
 
 // Build the SMTP transport lazily so the server still boots without creds
 // (useful in CI / local dev where mail isn't configured).
+// Require BOTH host and password — otherwise sending would hang trying to
+// authenticate against the SMTP server with no credentials.
 function createTransport() {
-  if (!process.env.SMTP_HOST) return null;
+  if (!process.env.SMTP_HOST || !process.env.SMTP_PASS) return null;
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),
@@ -57,6 +59,10 @@ function createTransport() {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Fail fast instead of hanging the request if SMTP is unreachable.
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 8000,
   });
 }
 
