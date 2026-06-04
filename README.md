@@ -7,6 +7,19 @@ Kubernetes via a Helm chart — because that itself is the DevOps showcase.
 **Live:** 🌐 [infinityagi.vercel.app](https://infinityagi.vercel.app) ·
 🔌 API [anant-portfolio-api.onrender.com](https://anant-portfolio-api.onrender.com)
 
+### Features
+
+- **Interactive terminal UI** — the home page is a working shell. Try
+  `help`, `whoami`, `skills` (or the easter egg `kubectl get pods`),
+  `experience` → `exp 1`, `neofetch`, with command history (↑/↓) and Tab
+  autocomplete.
+- **AI "ask my resume"** — `ask <question>` answers questions about Anant via
+  Groq (`llama-3.3-70b-versatile`), grounded strictly on the resume so it
+  won't hallucinate. Backed by `POST /api/ask`.
+- **Classic view** — a traditional scroll-based portfolio lives at `/classic`
+  (command: `classic`).
+- **Contact API** — `POST /api/contact` with SMTP email + rate limiting.
+
 ```
 portfolio/
 ├── frontend/                # Next.js 15 portfolio site (App Router, Tailwind)
