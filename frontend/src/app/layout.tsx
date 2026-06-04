@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { profile } from "@/data/resume";
 
@@ -16,6 +17,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://infinityagi.vercel.app"),
   title: `${profile.name} — ${profile.title}`,
   description: profile.summary,
   keywords: [
@@ -34,6 +36,11 @@ export const metadata: Metadata = {
     description: profile.tagline,
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: `${profile.name} — ${profile.title}`,
+    description: profile.tagline,
+  },
 };
 
 export default function RootLayout({
@@ -43,7 +50,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

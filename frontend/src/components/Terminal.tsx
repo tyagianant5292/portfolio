@@ -7,39 +7,33 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { execute, completions, bannerNode, COMMANDS } from "./terminal/commands";
+import {
+  execute,
+  completions,
+  bannerNode,
+  COMMANDS,
+  statusNode,
+  statusErrorNode,
+} from "./terminal/commands";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const PROMPT = "anant@portfolio:~$";
 
 type Line = { id: number; node: ReactNode };
+type ChatMsg = { role: "user" | "assistant"; content: string };
 
 // Quick-access chips for visitors who don't want to type.
-const CHIPS = ["help", "whoami", "skills", "experience", "ask", "contact"];
+const CHIPS = ["help", "projects", "skills", "experience", "status", "ask"];
 
-function Typewriter({
-  text,
-  onTick,
-}: {
-  text: string;
-  onTick?: () => void;
-}) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    if (n >= text.length) return;
-    const t = setTimeout(() => {
-      setN((v) => v + 1);
-      onTick?.();
-    }, 10);
-    return () => clearTimeout(t);
-  }, [n, text, onTick]);
-  return (
-    <span>
-      {text.slice(0, n)}
-      {n < text.length && <span className="animate-pulse">▋</span>}
-    </span>
-  );
-}
+// Curated follow-ups offered after an AI answer.
+const SUGGESTIONS = [
+  "What is the Core42 AI Cloud platform?",
+  "Tell me about his vLLM deployments",
+  "What GPU hardware does he work with?",
+  "How does he handle CI/CD and GitOps?",
+  "What's his Kubernetes experience?",
+  "Why should we hire him?",
+];
 
 export default function Terminal() {
   const [lines, setLines] = useState<Line[]>([]);
@@ -52,6 +46,9 @@ export default function Terminal() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bootedRef = useRef(false);
+  const convoRef = useRef<ChatMsg[]>([]);
+  const askedRef = useRef<Set<string>>(new Set());
+  const submitRef = useRef<(raw: string) => void>(() => {});
 
   const scrollToBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -104,29 +101,77 @@ export default function Terminal() {
     </div>
   );
 
+  const aiNode = useCallback(
+    (
+      text: string,
+      opts: { streaming?: boolean; suggestions?: string[] } = {}
+    ): ReactNode => (
+      <div className="max-w-3xl">
+        <span className="text-cyan-400">anant-ai&gt; </span>
+        <span className="text-slate-100">
+          {text}
+          {opts.streaming && <span className="animate-pulse">▋</span>}
+        </span>
+        {opts.suggestions && opts.suggestions.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className="self-center text-xs text-slate-600">try:</span>
+            {opts.suggestions.map((s) => (
+              <button
+                key={s}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  submitRef.current(`ask ${s}`);
+                }}
+                className="rounded-md border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-xs text-cyan-300/90 transition-colors hover:border-cyan-500/60 hover:text-cyan-200"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+    []
+  );
+
   const runAsk = useCallback(
     async (question: string) => {
       setBusy(true);
-      const id = pushLine(
-        <span className="text-slate-500">🤖 thinking…</span>
-      );
+      askedRef.current.add(question.toLowerCase());
+      const id = pushLine(<span className="text-slate-500">🤖 thinking…</span>);
       try {
         const res = await fetch(`${API_URL}/api/ask`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
+          body: JSON.stringify({
+            question,
+            history: convoRef.current.slice(-6),
+          }),
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
-        updateLine(
-          id,
-          <div className="max-w-3xl">
-            <span className="text-cyan-400">anant-ai&gt; </span>
-            <span className="text-slate-100">
-              <Typewriter text={data.answer} onTick={scrollToBottom} />
-            </span>
-          </div>
+        if (!res.ok || !res.body) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `request failed (${res.status})`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let text = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          text += decoder.decode(value, { stream: true });
+          updateLine(id, aiNode(text, { streaming: true }));
+          scrollToBottom();
+        }
+
+        convoRef.current.push(
+          { role: "user", content: question },
+          { role: "assistant", content: text }
         );
+        const suggestions = SUGGESTIONS.filter(
+          (s) => !askedRef.current.has(s.toLowerCase())
+        ).slice(0, 3);
+        updateLine(id, aiNode(text || "(no answer)", { suggestions }));
       } catch (err) {
         updateLine(
           id,
@@ -138,8 +183,23 @@ export default function Terminal() {
         setBusy(false);
       }
     },
-    [pushLine, updateLine, scrollToBottom]
+    [pushLine, updateLine, scrollToBottom, aiNode]
   );
+
+  const runStatus = useCallback(async () => {
+    const id = pushLine(<span className="text-slate-500">fetching status…</span>);
+    try {
+      const res = await fetch(`${API_URL}/api/status`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      updateLine(id, statusNode(data));
+    } catch (err) {
+      updateLine(
+        id,
+        statusErrorNode(err instanceof Error ? err.message : "unreachable")
+      );
+    }
+  }, [pushLine, updateLine]);
 
   const submit = useCallback(
     (raw: string) => {
@@ -157,10 +217,18 @@ export default function Terminal() {
         runAsk(res.question);
         return;
       }
+      if (res.kind === "status") {
+        runStatus();
+        return;
+      }
       if (res.node) pushLine(res.node);
     },
-    [pushLine, runAsk]
+    [pushLine, runAsk, runStatus]
   );
+
+  useEffect(() => {
+    submitRef.current = submit;
+  }, [submit]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {

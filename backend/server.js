@@ -46,6 +46,31 @@ app.get("/", (_req, res) =>
   res.json({ service: "anant-portfolio-api", status: "running" })
 );
 
+// Count requests so the live `status` command can show real traffic.
+const startedAt = Date.now();
+let requestsServed = 0;
+app.use((_req, _res, next) => {
+  requestsServed += 1;
+  next();
+});
+
+// Real build/runtime info — powers the terminal `status` command.
+app.get("/api/status", (_req, res) => {
+  res.json({
+    service: process.env.RENDER_SERVICE_NAME || "anant-portfolio-api",
+    status: "live",
+    uptimeSeconds: Math.floor(process.uptime()),
+    startedAt: new Date(startedAt).toISOString(),
+    requestsServed,
+    commit: (process.env.RENDER_GIT_COMMIT || "local").slice(0, 7),
+    branch: process.env.RENDER_GIT_BRANCH || "main",
+    node: process.version,
+    region: process.env.RENDER_REGION || "oregon",
+    aiEnabled: Boolean(process.env.GROQ_API_KEY),
+    aiModel: process.env.GROQ_API_KEY ? GROQ_MODEL : null,
+  });
+});
+
 // Build the SMTP transport lazily so the server still boots without creds
 // (useful in CI / local dev where mail isn't configured).
 // Require BOTH host and password — otherwise sending would hang trying to
@@ -138,8 +163,26 @@ const askLimiter = rateLimit({
   message: { error: "Too many questions — please slow down a bit." },
 });
 
+// Keep multi-turn context bounded to control tokens/cost.
+function buildMessages(question, history) {
+  const msgs = [{ role: "system", content: SYSTEM_PROMPT }];
+  if (Array.isArray(history)) {
+    for (const m of history.slice(-6)) {
+      if (
+        m &&
+        (m.role === "user" || m.role === "assistant") &&
+        typeof m.content === "string"
+      ) {
+        msgs.push({ role: m.role, content: m.content.slice(0, 2000) });
+      }
+    }
+  }
+  msgs.push({ role: "user", content: question });
+  return msgs;
+}
+
 app.post("/api/ask", askLimiter, async (req, res) => {
-  const { question } = req.body || {};
+  const { question, history } = req.body || {};
 
   if (!question || typeof question !== "string") {
     return res.status(400).json({ error: "question is required" });
@@ -153,10 +196,10 @@ app.post("/api/ask", askLimiter, async (req, res) => {
     });
   }
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
 
+  try {
     const groqRes = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
@@ -167,32 +210,62 @@ app.post("/api/ask", askLimiter, async (req, res) => {
         model: GROQ_MODEL,
         temperature: 0.4,
         max_tokens: 500,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: question },
-        ],
+        stream: true,
+        messages: buildMessages(question, history),
       }),
       signal: controller.signal,
     });
-    clearTimeout(timeout);
 
-    if (!groqRes.ok) {
+    if (!groqRes.ok || !groqRes.body) {
       const detail = await groqRes.text().catch(() => "");
       console.error("[ask] groq error:", groqRes.status, detail.slice(0, 200));
+      clearTimeout(timeout);
       return res.status(502).json({ error: "AI service is unavailable right now." });
     }
 
-    const data = await groqRes.json();
-    const answer = data?.choices?.[0]?.message?.content?.trim();
-    if (!answer) return res.status(502).json({ error: "Empty response from AI." });
+    // Stream plain-text tokens to the client as they arrive.
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
 
-    return res.json({ answer });
+    const reader = groqRes.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t.startsWith("data:")) continue;
+        const payload = t.slice(5).trim();
+        if (payload === "[DONE]") {
+          clearTimeout(timeout);
+          return res.end();
+        }
+        try {
+          const json = JSON.parse(payload);
+          const delta = json?.choices?.[0]?.delta?.content;
+          if (delta) res.write(delta);
+        } catch {
+          /* ignore keep-alive / partial frames */
+        }
+      }
+    }
+    clearTimeout(timeout);
+    return res.end();
   } catch (err) {
-    const aborted = err.name === "AbortError";
+    clearTimeout(timeout);
     console.error("[ask] failed:", err.message);
-    return res
-      .status(aborted ? 504 : 502)
-      .json({ error: aborted ? "AI took too long to respond." : "Failed to reach AI." });
+    if (!res.headersSent) {
+      const aborted = err.name === "AbortError";
+      return res
+        .status(aborted ? 504 : 502)
+        .json({ error: aborted ? "AI took too long to respond." : "Failed to reach AI." });
+    }
+    return res.end();
   }
 });
 

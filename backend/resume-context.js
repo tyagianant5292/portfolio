@@ -26,6 +26,13 @@ SKILLS
 
 EXPERIENCE
 
+ABOUT THE CORE42 AI CLOUD (Anant's current main work)
+Core42 is one of the largest AI cloud providers. Anant helps build and operate their GPU cloud platform:
+- Console: https://console.aicloud.core42.ai — a self-service portal where customers can purchase GPU compute on demand.
+- Hardware: NVIDIA H100 GPU servers and AMD GPUs.
+- On the platform, users can buy GPUs, spin up Kubernetes clusters, create Slurm clusters, and deploy their own AI/ML models on Kubernetes.
+- Anant has personally deployed vLLM inference models on this platform and works on the bare-metal provisioning, GPU/InfiniBand commissioning, and networking that makes it reliable.
+
 1) Netgroup.ai (Client: Core42) — DevOps Engineer — Abu Dhabi, UAE — Jul 2025 to Present
 - Builds and maintains cloud-native and bare-metal infrastructure for large-scale AI/ML workloads across hybrid environments.
 - Deploys and manages vLLM and other inference models on Kubernetes, optimizing GPU resource utilization for real-time and batch inference.

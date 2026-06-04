@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import NextLink from "next/link";
 import {
   profile,
   skills,
@@ -7,11 +8,26 @@ import {
   awards,
   languages,
 } from "@/data/resume";
+import { projects } from "@/data/projects";
 
 export type CommandResult =
   | { kind: "lines"; node: ReactNode }
   | { kind: "clear" }
-  | { kind: "ask"; question: string };
+  | { kind: "ask"; question: string }
+  | { kind: "status" };
+
+export type StatusData = {
+  service: string;
+  status: string;
+  uptimeSeconds: number;
+  requestsServed: number;
+  commit: string;
+  branch: string;
+  node: string;
+  region: string;
+  aiEnabled: boolean;
+  aiModel: string | null;
+};
 
 // Small styling helpers so command output stays consistent.
 const C = {
@@ -45,10 +61,12 @@ export const COMMANDS: { name: string; desc: string }[] = [
   { name: "whoami", desc: "who is Anant Kumar" },
   { name: "about", desc: "professional summary" },
   { name: "skills", desc: "tech stack (try: kubectl get pods)" },
+  { name: "projects", desc: "case-study deep-dives — then: project <n>" },
   { name: "experience", desc: "work history — then: exp <n>" },
   { name: "education", desc: "academic background" },
   { name: "awards", desc: "recognition & awards" },
   { name: "ask", desc: "ask the AI anything about Anant — ask <question>" },
+  { name: "status", desc: "live backend status (real uptime, commit, traffic)" },
   { name: "contact", desc: "email, phone & social links" },
   { name: "resume", desc: "where to find the full resume" },
   { name: "neofetch", desc: "system info, terminal-style" },
@@ -57,7 +75,7 @@ export const COMMANDS: { name: string; desc: string }[] = [
   { name: "clear", desc: "clear the terminal" },
 ];
 
-const NAMES = COMMANDS.map((c) => c.name).concat(["github", "linkedin", "email", "ls", "cat", "sudo"]);
+const NAMES = COMMANDS.map((c) => c.name).concat(["github", "linkedin", "email", "ls", "cat", "sudo", "project", "nvidia-smi", "kubectl", "helm"]);
 
 export function completions(prefix: string): string[] {
   if (!prefix) return [];
@@ -211,6 +229,183 @@ function experienceDetailNode(idx: number): ReactNode {
   );
 }
 
+function projectsListNode(): ReactNode {
+  return (
+    <div>
+      <p className={C.muted}>case-study deep-dives:</p>
+      {projects.map((p, i) => (
+        <div key={p.slug} className="flex flex-wrap gap-x-3">
+          <span className={C.yellow}>project {i + 1}</span>
+          <span className={C.white}>{p.title}</span>
+          <span className={C.muted}>— {p.org}</span>
+        </div>
+      ))}
+      <p className={`${C.muted} mt-2`}>
+        Type <span className={C.yellow}>project 1</span> … to open a write-up.
+      </p>
+    </div>
+  );
+}
+
+function projectDetailNode(idx: number): ReactNode {
+  const p = projects[idx];
+  if (!p)
+    return (
+      <p className={C.pink}>
+        No such project. Try <span className={C.yellow}>projects</span>.
+      </p>
+    );
+  return (
+    <div className="space-y-2">
+      <div>
+        <p className={`${C.accent} text-base font-semibold`}>{p.title}</p>
+        <p className={C.muted}>
+          {p.org} · {p.period}
+        </p>
+      </div>
+
+      <div>
+        <span className={`${C.green} font-semibold`}># Problem</span>
+        <p className={`${C.white} max-w-3xl`}>{p.problem}</p>
+      </div>
+
+      <div>
+        <span className={`${C.green} font-semibold`}># Architecture</span>
+        <pre className={`${C.accent} overflow-x-auto text-[11px] leading-tight sm:text-xs`}>
+          {p.architecture}
+        </pre>
+      </div>
+
+      <div>
+        <span className={`${C.green} font-semibold`}># What I did</span>
+        <ul className="mt-0.5 space-y-0.5">
+          {p.contributions.map((c, i) => (
+            <li key={i} className={C.white}>
+              <span className={C.green}>▸</span> {c}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <span className={`${C.green} font-semibold`}># Impact</span>
+        <ul className="mt-0.5 space-y-0.5">
+          {p.impact.map((c, i) => (
+            <li key={i} className={C.white}>
+              <span className={C.yellow}>★</span> {c}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 pt-0.5">
+        {p.stack.map((s) => (
+          <span
+            key={s}
+            className="rounded border border-slate-700 bg-slate-800/60 px-1.5 py-0.5 text-[11px] text-slate-300"
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+
+      {p.link ? (
+        <p>
+          <span className={C.muted}>live: </span>
+          <Link href={p.link}>{p.link}</Link>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function fmtUptime(s: number): string {
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ${m % 60}m`;
+  const d = Math.floor(h / 24);
+  return `${d}d ${h % 24}h`;
+}
+
+export function statusNode(data: StatusData): ReactNode {
+  const row = (k: string, v: ReactNode) => (
+    <div>
+      <span className={`${C.green} inline-block w-36`}>{k}</span>
+      <span className={C.white}>{v}</span>
+    </div>
+  );
+  return (
+    <div>
+      <p className={C.muted}># live status of this site&apos;s backend (real data)</p>
+      {row("service", data.service)}
+      {row("status", <span className={C.green}>{data.status} ●</span>)}
+      {row("uptime", fmtUptime(data.uptimeSeconds))}
+      {row("requests served", data.requestsServed.toLocaleString())}
+      {row("git commit", data.commit)}
+      {row("branch", data.branch)}
+      {row("node", data.node)}
+      {row("region", data.region)}
+      {row(
+        "ai",
+        data.aiEnabled ? (
+          <span className={C.green}>enabled ({data.aiModel})</span>
+        ) : (
+          <span className={C.muted}>disabled</span>
+        )
+      )}
+    </div>
+  );
+}
+
+export function statusErrorNode(msg: string): ReactNode {
+  return <span className="text-pink-400">status unavailable: {msg}</span>;
+}
+
+function kubectlGetAllNode(): ReactNode {
+  return (
+    <pre className="overflow-x-auto text-[11px] leading-tight text-slate-200 sm:text-xs">{String.raw`# this very portfolio, as infrastructure
+NAME                          READY   STATUS    HOST
+deploy/portfolio-frontend     1/1     `}<span className={C.green}>{`Running`}</span>{`   Vercel edge
+deploy/portfolio-backend      1/1     `}<span className={C.green}>{`Running`}</span>{`   Render (oregon)
+
+NAME                          IMAGE                                TAG
+image/portfolio-frontend      tyagianant98/portfolio-frontend      latest
+image/portfolio-backend       tyagianant98/portfolio-backend       latest
+
+NAME                          PIPELINE
+ci/github-actions             build → push → Docker Hub  `}<span className={C.green}>{`passing`}</span>{`
+`}</pre>
+  );
+}
+
+function helmListNode(): ReactNode {
+  return (
+    <pre className="overflow-x-auto text-[11px] leading-tight text-slate-200 sm:text-xs">{`NAME        NAMESPACE   REVISION   STATUS     CHART            APP VERSION
+portfolio   default     1          `}<span className={C.green}>{`deployed`}</span>{`   portfolio-0.1.0  1.0.0
+# chart: helm/portfolio — frontend (+ optional backend) on Kubernetes
+`}</pre>
+  );
+}
+
+function nvidiaSmiNode(): ReactNode {
+  return (
+    <pre className="overflow-x-auto text-[11px] leading-tight text-slate-200 sm:text-xs">{String.raw`+-----------------------------------------------------------------------------+
+| NVIDIA-SMI  Anant's Cluster        Driver: prod        CUDA: shipping it    |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M | Bus-Id        Memory | GPU-Util  Workload   |
+|===============================+======================+======================|
+|   0  H100 80GB         On      | 00000000:01:00  vLLM | `}<span className={C.green}>{`98%`}</span>{`   inference  |
+|   1  H100 80GB         On      | 00000000:02:00  vLLM | `}<span className={C.green}>{`94%`}</span>{`   inference  |
+|   2  AMD MI300X        On      | 00000000:03:00 train | `}<span className={C.yellow}>{`76%`}</span>{`   training   |
+|   3  H100 80GB         On      | 00000000:04:00  idle | `}<span className={C.muted}>{`02%`}</span>{`   available  |
++-------------------------------+----------------------+----------------------+
+   InfiniBand: `}<span className={C.green}>{`all ports UP`}</span>{`   ·   commissioning gate: `}<span className={C.green}>{`PASS`}</span>{`
+`}</pre>
+  );
+}
+
 function educationNode(): ReactNode {
   return (
     <div>
@@ -325,14 +520,24 @@ export function execute(raw: string): CommandResult {
   const arg = args.join(" ");
   const c = cmd.toLowerCase();
 
-  // kubectl get pods → skills as pods
+  // kubectl get pods → skills as pods; kubectl get all → this site's infra
   if (c === "kubectl") {
-    if (arg.replace(/\s+/g, " ").trim() === "get pods")
-      return { kind: "lines", node: skillsAsPods() };
+    const sub = arg.replace(/\s+/g, " ").trim();
+    if (sub === "get pods") return { kind: "lines", node: skillsAsPods() };
+    if (sub === "get all" || sub === "get deploy" || sub === "get deployments")
+      return { kind: "lines", node: kubectlGetAllNode() };
     return {
       kind: "lines",
-      node: <p className={C.muted}>try: kubectl get pods</p>,
+      node: <p className={C.muted}>try: kubectl get pods · kubectl get all</p>,
     };
+  }
+
+  // helm list → this site's own Helm release
+  if (c === "helm") {
+    const sub = arg.replace(/\s+/g, " ").trim();
+    if (sub === "list" || sub === "ls" || sub === "list -a")
+      return { kind: "lines", node: helmListNode() };
+    return { kind: "lines", node: <p className={C.muted}>try: helm list</p> };
   }
 
   switch (c) {
@@ -347,6 +552,17 @@ export function execute(raw: string): CommandResult {
       };
     case "skills":
       return { kind: "lines", node: skillsNode() };
+    case "projects":
+      return { kind: "lines", node: projectsListNode() };
+    case "project":
+    case "proj": {
+      if (arg && /^\d+$/.test(arg))
+        return { kind: "lines", node: projectDetailNode(Number(arg) - 1) };
+      return { kind: "lines", node: projectsListNode() };
+    }
+    case "nvidia-smi":
+    case "nvidia":
+      return { kind: "lines", node: nvidiaSmiNode() };
     case "ls":
       if (arg.startsWith("experience"))
         return { kind: "lines", node: experienceListNode() };
@@ -354,7 +570,7 @@ export function execute(raw: string): CommandResult {
         kind: "lines",
         node: (
           <p className="text-slate-100">
-            about  skills  experience/  education  awards  contact
+            about  skills  projects/  experience/  education  awards  contact
           </p>
         ),
       };
@@ -364,17 +580,25 @@ export function execute(raw: string): CommandResult {
         return { kind: "lines", node: experienceDetailNode(Number(arg) - 1) };
       return { kind: "lines", node: experienceListNode() };
     }
-    case "cat":
+    case "cat": {
+      if (arg.includes("project")) {
+        const pi = projects.findIndex((p) => arg.includes(p.slug));
+        if (pi >= 0) return { kind: "lines", node: projectDetailNode(pi) };
+        return { kind: "lines", node: projectsListNode() };
+      }
       if (arg.includes("experience")) {
         const found = experience.findIndex((j) => arg.includes(slug(j.company)));
         if (found >= 0)
           return { kind: "lines", node: experienceDetailNode(found) };
       }
       return { kind: "lines", node: experienceListNode() };
+    }
     case "education":
       return { kind: "lines", node: educationNode() };
     case "awards":
       return { kind: "lines", node: awardsNode() };
+    case "status":
+      return { kind: "status" };
     case "contact":
       return { kind: "lines", node: contactNode() };
     case "github":
@@ -398,10 +622,15 @@ export function execute(raw: string): CommandResult {
         kind: "lines",
         node: (
           <p className="text-slate-100">
-            Full resume & source on GitHub:{" "}
-            <Link href="https://github.com/tyagianant5292/portfolio">
-              github.com/tyagianant5292/portfolio
-            </Link>
+            Opening a print-ready resume (Save as PDF) →{" "}
+            <NextLink
+              href="/resume"
+              className="text-cyan-400 underline decoration-cyan-700 underline-offset-2 hover:text-cyan-300"
+            >
+              /resume
+            </NextLink>{" "}
+            <span className="text-slate-500">· source:</span>{" "}
+            <Link href="https://github.com/tyagianant5292/portfolio">github</Link>
           </p>
         ),
       };
@@ -413,12 +642,12 @@ export function execute(raw: string): CommandResult {
         node: (
           <p className="text-slate-100">
             Opening the classic visual portfolio →{" "}
-            <a
+            <NextLink
               href="/classic"
               className="text-cyan-400 underline decoration-cyan-700 underline-offset-2 hover:text-cyan-300"
             >
               /classic
-            </a>
+            </NextLink>
           </p>
         ),
       };
