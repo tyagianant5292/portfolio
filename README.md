@@ -4,6 +4,9 @@ Personal portfolio site for a DevOps / AI Cloud Infrastructure Engineer.
 Built to be deployed **two ways** — managed on Vercel, and self-hosted on
 Kubernetes via a Helm chart — because that itself is the DevOps showcase.
 
+**Live:** 🌐 [infinityagi.vercel.app](https://infinityagi.vercel.app) ·
+🔌 API [anant-portfolio-api.onrender.com](https://anant-portfolio-api.onrender.com)
+
 ```
 portfolio/
 ├── frontend/                # Next.js 15 portfolio site (App Router, Tailwind)

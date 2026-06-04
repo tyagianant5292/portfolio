@@ -20,6 +20,8 @@ env:
   BACKEND_IMAGE: tyagianant98/portfolio-backend
   # NEXT_PUBLIC_* is baked at build time — point the frontend at the Render API.
   NEXT_PUBLIC_API_URL: https://anant-portfolio-api.onrender.com
+  # Run JS-based actions on Node 24 (silences the Node 20 deprecation warning).
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   build:

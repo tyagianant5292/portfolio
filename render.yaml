@@ -17,7 +17,7 @@ services:
       - key: PORT
         value: 4000
       - key: ALLOWED_ORIGINS
-        value: https://anant-portfolio.vercel.app,http://localhost:3000
+        value: https://infinityagi.vercel.app,https://anant-portfolio-three.vercel.app,http://localhost:3000
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
