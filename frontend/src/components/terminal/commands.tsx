@@ -452,7 +452,13 @@ function contactNode(): ReactNode {
       </p>
       <p>
         <span className={C.muted}>phone   </span>{" "}
-        <span className={C.white}>{profile.phone}</span>
+        <span className={C.white}>{profile.phone}</span>{" "}
+        <span className={C.muted}>(UAE)</span>
+      </p>
+      <p>
+        <span className={C.muted}>phone   </span>{" "}
+        <span className={C.white}>{profile.phoneIN}</span>{" "}
+        <span className={C.muted}>(India)</span>
       </p>
       <p>
         <span className={C.muted}>github  </span>{" "}

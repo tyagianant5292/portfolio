@@ -4,7 +4,7 @@
 export const RESUME_CONTEXT = `
 ANANT KUMAR — DevOps Engineer | AI Cloud Infrastructure
 Location: Abu Dhabi, UAE
-Email: tyagianant98@gmail.com | Phone: +971 54 713 5292
+Email: tyagianant98@gmail.com | Phone: +971 54 713 5292 (UAE), +91 96394 45292 (India)
 LinkedIn: linkedin.com/in/tyagianant98 | GitHub: github.com/tyagianant5292
 
 SUMMARY

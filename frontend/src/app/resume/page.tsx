@@ -36,7 +36,10 @@ export default function ResumePage() {
           </h1>
           <p className="mt-0.5 font-medium text-slate-600">{profile.title}</p>
           <p className="mt-1 text-xs text-slate-600">
-            {profile.location} · {profile.phone} · {profile.email} ·{" "}
+            {profile.location} · {profile.phone} (UAE) · {profile.phoneIN} (India) ·{" "}
+            {profile.email}
+          </p>
+          <p className="text-xs text-slate-600">
             linkedin.com/in/tyagianant98 · github.com/tyagianant5292
           </p>
         </header>

@@ -64,7 +64,15 @@ export default function Contact() {
               href={`tel:${profile.phone.replace(/\s/g, "")}`}
               className="flex items-center gap-3 rounded-lg border border-ink-700 bg-ink-800/50 p-4 text-sm text-slate-300 transition-colors hover:border-brand-500"
             >
-              <Phone size={18} className="text-brand-400" /> {profile.phone}
+              <Phone size={18} className="text-brand-400" /> {profile.phone}{" "}
+              <span className="text-slate-500">(UAE)</span>
+            </a>
+            <a
+              href={`tel:${profile.phoneIN.replace(/\s/g, "")}`}
+              className="flex items-center gap-3 rounded-lg border border-ink-700 bg-ink-800/50 p-4 text-sm text-slate-300 transition-colors hover:border-brand-500"
+            >
+              <Phone size={18} className="text-brand-400" /> {profile.phoneIN}{" "}
+              <span className="text-slate-500">(India)</span>
             </a>
             <a
               href={profile.github}

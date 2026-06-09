@@ -6,6 +6,7 @@ export const profile = {
   title: "DevOps Engineer | AI Cloud Infrastructure",
   location: "Abu Dhabi, UAE",
   phone: "+971 54 713 5292",
+  phoneIN: "+91 96394 45292",
   email: "tyagianant98@gmail.com",
   linkedin: "https://linkedin.com/in/tyagianant98",
   github: "https://github.com/tyagianant5292",
