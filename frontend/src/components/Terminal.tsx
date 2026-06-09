@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import Link from "next/link";
+import { Github, Linkedin, FileText, Monitor } from "lucide-react";
 import {
   execute,
   completions,
@@ -15,6 +17,7 @@ import {
   statusNode,
   statusErrorNode,
 } from "./terminal/commands";
+import { profile } from "@/data/resume";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const PROMPT = "anant@portfolio:~$";
@@ -90,6 +93,16 @@ export default function Terminal() {
         ),
       },
       { delay: 850, node: bannerNode() },
+      {
+        delay: 1100,
+        node: (
+          <span className="text-slate-500">
+            👔 Prefer a normal page? Click{" "}
+            <span className="text-amber-400">Classic view</span> at the top
+            right. Otherwise type <span className="text-amber-400">help</span>.
+          </span>
+        ),
+      },
     ];
     steps.forEach((s) => setTimeout(() => pushLine(s.node), s.delay));
   }, [pushLine]);
@@ -265,12 +278,51 @@ export default function Terminal() {
     }
   };
 
+  const navLink =
+    "flex items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-white";
+
   return (
     <div
-      className="min-h-screen bg-[#0a0e16] bg-grid p-3 sm:p-6"
+      className="flex h-screen flex-col bg-[#0a0e16] bg-grid p-3 sm:p-6"
       onClick={() => inputRef.current?.focus()}
     >
-      <div className="mx-auto flex h-[calc(100vh-1.5rem)] max-w-4xl flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-[#0b0f1a]/95 shadow-2xl sm:h-[calc(100vh-3rem)]">
+      {/* view-switch bar — so non-technical visitors (HR) can switch easily */}
+      <div className="mx-auto mb-3 flex w-full max-w-4xl items-center justify-between gap-2">
+        <span className="font-mono text-sm text-slate-300">
+          <span className="text-emerald-400">~/</span>anant-kumar
+        </span>
+        <nav className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <span className="flex items-center gap-1.5 rounded-md bg-emerald-500/15 px-2.5 py-1 font-mono text-xs text-emerald-300 ring-1 ring-emerald-500/30">
+            <Monitor size={13} /> Terminal
+          </span>
+          <Link href="/classic" className={navLink}>
+            <FileText size={13} /> Classic view
+          </Link>
+          <Link href="/resume" className={`${navLink} hidden sm:flex`}>
+            Resume
+          </Link>
+          <a
+            href={profile.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub"
+            className={navLink}
+          >
+            <Github size={14} />
+          </a>
+          <a
+            href={profile.linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="LinkedIn"
+            className={navLink}
+          >
+            <Linkedin size={14} />
+          </a>
+        </nav>
+      </div>
+
+      <div className="mx-auto flex w-full min-h-0 max-w-4xl flex-1 flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-[#0b0f1a]/95 shadow-2xl">
         {/* window chrome */}
         <div className="flex items-center gap-2 border-b border-slate-700/60 bg-[#11151f] px-4 py-2.5">
           <span className="h-3 w-3 rounded-full bg-red-500/90" />

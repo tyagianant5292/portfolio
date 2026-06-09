@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { Menu, X, TerminalSquare } from "lucide-react";
 
 const links = [
   { href: "#about", label: "About" },
@@ -32,11 +33,27 @@ export default function Navbar() {
               </a>
             </li>
           ))}
+          <li>
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 rounded-md border border-brand-500/40 bg-brand-500/10 px-3 py-1.5 text-sm font-medium text-brand-400 transition-colors hover:bg-brand-500/20 hover:text-white"
+            >
+              <TerminalSquare size={15} /> Terminal
+            </Link>
+          </li>
         </ul>
+
+        <Link
+          href="/"
+          aria-label="Open terminal view"
+          className="flex items-center gap-1.5 rounded-md border border-brand-500/40 bg-brand-500/10 px-2.5 py-1.5 text-xs font-medium text-brand-400 md:hidden"
+        >
+          <TerminalSquare size={14} /> Terminal
+        </Link>
 
         <button
           aria-label="Toggle menu"
-          className="text-slate-300 md:hidden"
+          className="ml-2 text-slate-300 md:hidden"
           onClick={() => setOpen((v) => !v)}
         >
           {open ? <X size={22} /> : <Menu size={22} />}
